@@ -1,0 +1,611 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  EMPLOYEE
+}
+
+enum ActiveStatus {
+  ACTIVE
+  LEAVE
+  INACTIVE
+}
+
+enum FormKindName {
+  PA
+  TOPS
+}
+
+model Company {
+  id                  String                @id @default(cuid())
+  name                String
+  createdAt           DateTime              @default(now())
+  users               User[]
+  groupTypes          GroupType[]
+  groups              OrgGroup[]
+  formKinds           FormKind[]
+  segmentTypes        SegmentType[]
+  cycles              Cycle[]
+  keyItems            KeyItem[]
+  scorecardItems      ScorecardItem[]
+  accountabilityItems AccountabilityItem[]
+  behaviorItems       BehaviorItem[]
+  templates           AppraisalTemplate[]
+  ggItems             GgItem[]
+}
+
+model User {
+  id                       String        @id @default(cuid())
+  companyId                String
+  company                  Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  email                    String
+  passwordHash             String
+  role                     UserRole
+  status                   ActiveStatus  @default(ACTIVE)
+  firstName                String
+  lastName                 String
+  employeeNumber           String?
+  whoType                  String        @default("Employee")
+  jobTitle                 String        @default("")
+  department               String        @default("")
+  createdAt                DateTime      @default(now())
+  memberships              GroupMember[]
+  ownerships               GroupOwner[]
+  evaluationsAsEmployee    Evaluation[]  @relation("EvalEmployee")
+  evaluationsAsReviewer    Evaluation[]  @relation("EvalReviewer")
+  keyItemValues            KeyItemValue[]
+  talentRanks              TalentRank[]
+  history                  CycleHistory[]
+
+  @@unique([companyId, email])
+  @@index([companyId, employeeNumber])
+}
+
+model GroupType {
+  id        String     @id @default(cuid())
+  companyId String
+  company   Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name      String
+  groups    OrgGroup[]
+
+  @@unique([companyId, name])
+}
+
+model OrgGroup {
+  id                       String         @id @default(cuid())
+  companyId                String
+  company                  Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  groupTypeId              String
+  groupType                GroupType      @relation(fields: [groupTypeId], references: [id])
+  name                     String
+  usersCanEditOwnAppraisal Boolean        @default(false)
+  active                   Boolean        @default(true)
+  parentLinks              GroupLink[]    @relation("ChildLinks")
+  childLinks               GroupLink[]    @relation("ParentLinks")
+  members                  GroupMember[]
+  owners                   GroupOwner[]
+  cycleGroups              CycleGroup[]
+  evaluations              Evaluation[]
+  talentRanks              TalentRank[]
+}
+
+model GroupLink {
+  id       String   @id @default(cuid())
+  parentId String
+  childId  String
+  parent   OrgGroup @relation("ParentLinks", fields: [parentId], references: [id], onDelete: Cascade)
+  child    OrgGroup @relation("ChildLinks", fields: [childId], references: [id], onDelete: Cascade)
+
+  @@unique([parentId, childId])
+}
+
+model GroupMember {
+  id      String   @id @default(cuid())
+  groupId String
+  userId  String
+  group   OrgGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+}
+
+model GroupOwner {
+  id      String   @id @default(cuid())
+  groupId String
+  userId  String
+  group   OrgGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+}
+
+model FormKind {
+  id         String              @id @default(cuid())
+  companyId  String
+  company    Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name       FormKindName
+  cycles     Cycle[]
+  templates  AppraisalTemplate[]
+
+  @@unique([companyId, name])
+}
+
+model SegmentType {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name      String
+  cycles    Cycle[]
+
+  @@unique([companyId, name])
+}
+
+model Cycle {
+  id            String         @id @default(cuid())
+  companyId     String
+  company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  year          Int
+  formKindId    String
+  formKind      FormKind       @relation(fields: [formKindId], references: [id])
+  segmentTypeId String
+  segmentType   SegmentType    @relation(fields: [segmentTypeId], references: [id])
+  openDate      DateTime       @db.Date
+  closeDate     DateTime?      @db.Date
+  locked        Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  groups        CycleGroup[]
+  history       CycleHistory[]
+  evaluations   Evaluation[]
+  keyItemValues KeyItemValue[]
+  talentRanks   TalentRank[]
+}
+
+model CycleGroup {
+  id      String   @id @default(cuid())
+  cycleId String
+  groupId String
+  cycle   Cycle    @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  group   OrgGroup @relation(fields: [groupId], references: [id])
+
+  @@unique([cycleId, groupId])
+}
+
+model CycleHistory {
+  id        String   @id @default(cuid())
+  cycleId   String
+  cycle     Cycle    @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  action    String
+  comments  String   @default("")
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  actorName String
+  createdAt DateTime @default(now())
+}
+
+model Evaluation {
+  id           String        @id @default(cuid())
+  cycleId      String
+  groupId      String
+  employeeId   String
+  reviewerId   String?
+  unlocked     Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  cycle        Cycle         @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  group        OrgGroup      @relation(fields: [groupId], references: [id])
+  employee     User          @relation("EvalEmployee", fields: [employeeId], references: [id])
+  reviewer     User?         @relation("EvalReviewer", fields: [reviewerId], references: [id])
+  appraisal    Appraisal?
+  talentReview TalentReview?
+
+  @@unique([cycleId, groupId, employeeId])
+}
+
+model AppraisalTemplate {
+  id                         String                       @id @default(cuid())
+  companyId                  String
+  company                    Company                      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  year                       Int
+  formKindId                 String
+  formKind                   FormKind                     @relation(fields: [formKindId], references: [id])
+  whoType                    String
+  inclSelfRating             Boolean                      @default(true)
+  inclEmplInfo               Boolean                      @default(true)
+  inclOthrJobs               Boolean                      @default(false)
+  inclRankDesc               Boolean                      @default(true)
+  inclInstruct               Boolean                      @default(true)
+  inclKeysSect               Boolean                      @default(true)
+  inclScorecardSect          Boolean                      @default(false)
+  inclAcctSect               Boolean                      @default(true)
+  inclG2GSect                Boolean                      @default(true)
+  inclPerfSummSect           Boolean                      @default(true)
+  inclSuper1CmtSect          Boolean                      @default(true)
+  inclSuper2CmtSect          Boolean                      @default(false)
+  inclSuper3CmtSect          Boolean                      @default(false)
+  inclMgrDutysSect           Boolean                      @default(false)
+  inclRatingsSummSect        Boolean                      @default(true)
+  inclG2GGoalsSect           Boolean                      @default(true)
+  inclApprSigsSect           Boolean                      @default(true)
+  eeMin                      Int                          @default(80)
+  meMin                      Int                          @default(51)
+  formRatingsDescTitle       String                       @default("Rating descriptions")
+  formRatingsDesc            String                       @default("")
+  formInstructTitle          String                       @default("Instructions")
+  formInstruct               String                       @default("")
+  keysSectTitle              String                       @default("Key results")
+  keysSectInstruct           String                       @default("")
+  scorecardSectTitle         String                       @default("Scorecard")
+  scorecardSectInstruct      String                       @default("")
+  acctSectTitle              String                       @default("Accountabilities")
+  acctSectInstruct           String                       @default("")
+  g2gBehaveSectTitle         String                       @default("Behaviors")
+  g2gBehaveSectInstruct      String                       @default("")
+  g2gBehaveSectLegend        String                       @default("")
+  perfSummSectTitle          String                       @default("Performance summary")
+  superCmt1Title             String                       @default("Supervisor comments")
+  superCmt2Title             String                       @default("Additional supervisor comments")
+  superCmt3Title             String                       @default("Further supervisor comments")
+  mgrDutysSectTitle          String                       @default("Manager duties")
+  mgrDutysSectText           String                       @default("")
+  g2gGoalsSectTitle          String                       @default("Goals")
+  g2gGoalsSectInstruct       String                       @default("")
+  signatureCompleterEmpTitle String                       @default("Employee")
+  signatureCompleterSupTitle String                       @default("Supervisor")
+  signatureApproverTitle     String                       @default("Approver")
+  signatureEmployeeTitle     String                       @default("Employee acknowledgement")
+  keyItems                   TemplateKeyItem[]
+  scorecardItems             TemplateScorecardItem[]
+  accountabilityItems        TemplateAccountabilityItem[]
+  behaviorItems              TemplateBehaviorItem[]
+  appraisals                 Appraisal[]
+
+  @@unique([companyId, year, formKindId, whoType])
+}
+
+model KeyItem {
+  id          String             @id @default(cuid())
+  companyId   String
+  company     Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name        String
+  sortOrder   Int                @default(0)
+  p1Incl      Boolean            @default(true)
+  p2Incl      Boolean            @default(true)
+  p3Incl      Boolean            @default(true)
+  p4Incl      Boolean            @default(true)
+  p5Incl      Boolean            @default(true)
+  p1Score     Int                @default(5)
+  p2Score     Int                @default(10)
+  p3Score     Int                @default(15)
+  p4Score     Int                @default(20)
+  p5Score     Int                @default(25)
+  p1Min       Decimal?           @db.Decimal(12, 2)
+  p2Min       Decimal?           @db.Decimal(12, 2)
+  p3Min       Decimal?           @db.Decimal(12, 2)
+  p4Min       Decimal?           @db.Decimal(12, 2)
+  p5Min       Decimal?           @db.Decimal(12, 2)
+  p1Label     String             @default("Unsatisfactory")
+  p2Label     String             @default("Needs improvement")
+  p3Label     String             @default("Meets expectations")
+  p4Label     String             @default("Exceeds expectations")
+  p5Label     String             @default("Outstanding")
+  templates   TemplateKeyItem[]
+  lines       AppraisalKeyLine[]
+  values      KeyItemValue[]
+}
+
+model ScorecardItem {
+  id         String                   @id @default(cuid())
+  companyId  String
+  company    Company                  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name       String
+  sortOrder  Int                      @default(0)
+  p1Incl     Boolean                  @default(true)
+  p2Incl     Boolean                  @default(true)
+  p3Incl     Boolean                  @default(true)
+  p4Incl     Boolean                  @default(true)
+  p5Incl     Boolean                  @default(true)
+  p1Score    Int                      @default(5)
+  p2Score    Int                      @default(10)
+  p3Score    Int                      @default(15)
+  p4Score    Int                      @default(20)
+  p5Score    Int                      @default(25)
+  p1Min      Decimal?                 @db.Decimal(12, 2)
+  p2Min      Decimal?                 @db.Decimal(12, 2)
+  p3Min      Decimal?                 @db.Decimal(12, 2)
+  p4Min      Decimal?                 @db.Decimal(12, 2)
+  p5Min      Decimal?                 @db.Decimal(12, 2)
+  p1Label    String                   @default("Unsatisfactory")
+  p2Label    String                   @default("Needs improvement")
+  p3Label    String                   @default("Meets expectations")
+  p4Label    String                   @default("Exceeds expectations")
+  p5Label    String                   @default("Outstanding")
+  templates  TemplateScorecardItem[]
+  lines      AppraisalScorecardLine[]
+}
+
+model AccountabilityItem {
+  id         String                        @id @default(cuid())
+  companyId  String
+  company    Company                       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name       String
+  sortOrder  Int                           @default(0)
+  p1Incl     Boolean                       @default(true)
+  p2Incl     Boolean                       @default(true)
+  p3Incl     Boolean                       @default(true)
+  p4Incl     Boolean                       @default(true)
+  p5Incl     Boolean                       @default(true)
+  p1Score    Int                           @default(5)
+  p2Score    Int                           @default(10)
+  p3Score    Int                           @default(15)
+  p4Score    Int                           @default(20)
+  p5Score    Int                           @default(25)
+  p1Min      Decimal?                      @db.Decimal(12, 2)
+  p2Min      Decimal?                      @db.Decimal(12, 2)
+  p3Min      Decimal?                      @db.Decimal(12, 2)
+  p4Min      Decimal?                      @db.Decimal(12, 2)
+  p5Min      Decimal?                      @db.Decimal(12, 2)
+  p1Label    String                        @default("Unsatisfactory")
+  p2Label    String                        @default("Needs improvement")
+  p3Label    String                        @default("Meets expectations")
+  p4Label    String                        @default("Exceeds expectations")
+  p5Label    String                        @default("Outstanding")
+  templates  TemplateAccountabilityItem[]
+  lines      AppraisalAccountabilityLine[]
+}
+
+model BehaviorItem {
+  id         String                   @id @default(cuid())
+  companyId  String
+  company    Company                  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name       String
+  sortOrder  Int                      @default(0)
+  p1Incl     Boolean                  @default(true)
+  p2Incl     Boolean                  @default(true)
+  p3Incl     Boolean                  @default(true)
+  p4Incl     Boolean                  @default(true)
+  p5Incl     Boolean                  @default(true)
+  p1Score    Int                      @default(5)
+  p2Score    Int                      @default(10)
+  p3Score    Int                      @default(15)
+  p4Score    Int                      @default(20)
+  p5Score    Int                      @default(25)
+  p1Min      Decimal?                 @db.Decimal(12, 2)
+  p2Min      Decimal?                 @db.Decimal(12, 2)
+  p3Min      Decimal?                 @db.Decimal(12, 2)
+  p4Min      Decimal?                 @db.Decimal(12, 2)
+  p5Min      Decimal?                 @db.Decimal(12, 2)
+  p1Label    String                   @default("Unsatisfactory")
+  p2Label    String                   @default("Needs improvement")
+  p3Label    String                   @default("Meets expectations")
+  p4Label    String                   @default("Exceeds expectations")
+  p5Label    String                   @default("Outstanding")
+  templates  TemplateBehaviorItem[]
+  lines      AppraisalBehaviorLine[]
+}
+
+model TemplateKeyItem {
+  id         String             @id @default(cuid())
+  templateId String
+  keyItemId  String
+  sortOrder  Int                @default(0)
+  template   AppraisalTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  keyItem    KeyItem            @relation(fields: [keyItemId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, keyItemId])
+}
+
+model TemplateScorecardItem {
+  id             String            @id @default(cuid())
+  templateId     String
+  scorecardItemId String
+  sortOrder      Int               @default(0)
+  template       AppraisalTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  scorecardItem  ScorecardItem     @relation(fields: [scorecardItemId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, scorecardItemId])
+}
+
+model TemplateAccountabilityItem {
+  id                   String              @id @default(cuid())
+  templateId           String
+  accountabilityItemId String
+  sortOrder            Int                 @default(0)
+  template             AppraisalTemplate   @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  accountabilityItem   AccountabilityItem  @relation(fields: [accountabilityItemId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, accountabilityItemId])
+}
+
+model TemplateBehaviorItem {
+  id             String            @id @default(cuid())
+  templateId     String
+  behaviorItemId String
+  sortOrder      Int               @default(0)
+  template       AppraisalTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  behaviorItem   BehaviorItem      @relation(fields: [behaviorItemId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, behaviorItemId])
+}
+
+model Appraisal {
+  id                 String                        @id @default(cuid())
+  evaluationId       String                        @unique
+  evaluation         Evaluation                    @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  templateId         String
+  template           AppraisalTemplate             @relation(fields: [templateId], references: [id])
+  superComment1      String                        @default("")
+  superComment2      String                        @default("")
+  superComment3      String                        @default("")
+  empComment         String                        @default("")
+  mgrDutyPct         Decimal?                      @db.Decimal(6, 2)
+  empSignature       String                        @default("")
+  supSignature       String                        @default("")
+  approverSignature  String                        @default("")
+  otherJobsNote      String                        @default("")
+  updatedAt          DateTime                      @updatedAt
+  keyLines           AppraisalKeyLine[]
+  scorecardLines     AppraisalScorecardLine[]
+  accountabilityLines AppraisalAccountabilityLine[]
+  behaviorLines      AppraisalBehaviorLine[]
+  goals              AppraisalGoal[]
+}
+
+model AppraisalKeyLine {
+  id             String    @id @default(cuid())
+  appraisalId    String
+  appraisal      Appraisal @relation(fields: [appraisalId], references: [id], onDelete: Cascade)
+  keyItemId      String
+  keyItem        KeyItem   @relation(fields: [keyItemId], references: [id])
+  targetAmount   Decimal?  @db.Decimal(14, 2)
+  achievedAmount Decimal?  @db.Decimal(14, 2)
+  empLevel       Int?
+  supLevel       Int?
+  empComment     String    @default("")
+  supComment     String    @default("")
+
+  @@unique([appraisalId, keyItemId])
+}
+
+model AppraisalScorecardLine {
+  id           String        @id @default(cuid())
+  appraisalId  String
+  appraisal    Appraisal     @relation(fields: [appraisalId], references: [id], onDelete: Cascade)
+  scorecardItemId String
+  scorecardItem ScorecardItem @relation(fields: [scorecardItemId], references: [id])
+  numberAmount Decimal?      @db.Decimal(14, 2)
+  dollarAmount Decimal?      @db.Decimal(14, 2)
+  empLevel     Int?
+  supLevel     Int?
+  empComment   String        @default("")
+  supComment   String        @default("")
+
+  @@unique([appraisalId, scorecardItemId])
+}
+
+model AppraisalAccountabilityLine {
+  id                   String             @id @default(cuid())
+  appraisalId          String
+  appraisal            Appraisal          @relation(fields: [appraisalId], references: [id], onDelete: Cascade)
+  accountabilityItemId String
+  accountabilityItem   AccountabilityItem @relation(fields: [accountabilityItemId], references: [id])
+  text                 String             @default("")
+  empLevel             Int?
+  supLevel             Int?
+  empComment           String             @default("")
+  supComment           String             @default("")
+
+  @@unique([appraisalId, accountabilityItemId])
+}
+
+model AppraisalBehaviorLine {
+  id             String       @id @default(cuid())
+  appraisalId    String
+  appraisal      Appraisal    @relation(fields: [appraisalId], references: [id], onDelete: Cascade)
+  behaviorItemId String
+  behaviorItem   BehaviorItem @relation(fields: [behaviorItemId], references: [id])
+  empLevel       Int?
+  supLevel       Int?
+  empComment     String       @default("")
+  supComment     String       @default("")
+
+  @@unique([appraisalId, behaviorItemId])
+}
+
+model AppraisalGoal {
+  id             String    @id @default(cuid())
+  appraisalId    String
+  appraisal      Appraisal @relation(fields: [appraisalId], references: [id], onDelete: Cascade)
+  goalNumber     Int
+  goal           String
+  completionDate DateTime? @db.Date
+
+  @@unique([appraisalId, goalNumber])
+}
+
+model KeyItemValue {
+  id         String   @id @default(cuid())
+  cycleId    String
+  cycle      Cycle    @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  keyItemId  String
+  keyItem    KeyItem  @relation(fields: [keyItemId], references: [id], onDelete: Cascade)
+  sortOrder  Int
+  value      Decimal  @db.Decimal(14, 2)
+
+  @@unique([cycleId, userId, keyItemId, sortOrder])
+}
+
+model TalentReview {
+  id              String             @id @default(cuid())
+  evaluationId    String             @unique
+  evaluation      Evaluation         @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  perfTrend       String             @default("")
+  performance     String             @default("")
+  potential       String             @default("")
+  stpAction       String             @default("")
+  stpExplanation  String             @default("")
+  stpMove         String             @default("")
+  stpBestFit      String             @default("")
+  stpWhen         String             @default("")
+  ltpAction       String             @default("")
+  ltpExplanation  String             @default("")
+  ltpMove         String             @default("")
+  ltpBestFit      String             @default("")
+  ltpWhen         String             @default("")
+  willingRelocate String             @default("")
+  geoPref         String             @default("")
+  strength1       String             @default("")
+  weakness1       String             @default("")
+  strength2       String             @default("")
+  weakness2       String             @default("")
+  comments        String             @default("")
+  questions       String             @default("")
+  updatedAt       DateTime           @updatedAt
+  ggResponses     TalentGgResponse[]
+}
+
+model GgItem {
+  id        String             @id @default(cuid())
+  companyId String
+  company   Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  itemSeq   Int
+  itemText  String
+  helpText  String             @default("")
+  responses TalentGgResponse[]
+
+  @@unique([companyId, itemSeq])
+}
+
+model TalentGgResponse {
+  id             String       @id @default(cuid())
+  talentReviewId String
+  talentReview   TalentReview @relation(fields: [talentReviewId], references: [id], onDelete: Cascade)
+  ggItemId       String
+  ggItem         GgItem       @relation(fields: [ggItemId], references: [id])
+  rating         Int
+
+  @@unique([talentReviewId, ggItemId])
+}
+
+model TalentRank {
+  id       String   @id @default(cuid())
+  cycleId  String
+  groupId  String
+  userId   String
+  perfRank Int?
+  potlRank Int?
+  cycle    Cycle    @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  group    OrgGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([cycleId, groupId, userId])
+}

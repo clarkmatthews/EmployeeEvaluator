@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+body {
+  margin: 0;
+  background: #f8fafc;
+  color: #0f172a;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+.pa-report {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.pa-report h2 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.pa-section {
+  margin-top: 16px;
+  break-inside: avoid;
+}
+
+.pa-item {
+  margin-top: 10px;
+  break-inside: avoid;
+}
+
+.pa-report table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.pa-report th,
+.pa-report td {
+  border: 1px solid #94a3b8;
+  padding: 3px 6px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.pa-report th {
+  background: #f8fafc;
+  font-weight: 600;
+}
+
+.pa-report td.num,
+.pa-report td.mark {
+  text-align: center;
+}
+
+@media print {
+  body {
+    background: white;
+  }
+}
