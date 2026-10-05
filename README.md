@@ -1,6 +1,6 @@
 # EmployeeEvaluator
 
-EmployeeEvaluator is a local web app for annual performance appraisals and talent reviews. Administrators set up the company, cycles, and forms. Managers rate the people in their groups. Employees complete their own column when a group allows it. Finished reviews print from the browser.
+EmployeeEvaluator is a web app for annual performance appraisals and talent reviews. Administrators set up the company, cycles, and forms. Managers rate the people in their groups. Employees complete their own column when a group allows it. Finished reviews print from the browser.
 
 The seeded company is Sample Company. It has a West and East organization, a 2026 performance-appraisal cycle, and a 2026 talent-review cycle.
 
