@@ -47,8 +47,6 @@ You need Node.js and a local PostgreSQL server.
 
 `npm run db:seed` replaces the company data with the sample roster. The menu is in the top-left corner. Setup is available to administrators.
 
-![Application menu, with Setup open](docs/images/navigation.png)
-
 ## Page help
 
 Every application page has a **?** beside the title. It explains how that page works. Click it again, click outside it, or press Escape to close it.
