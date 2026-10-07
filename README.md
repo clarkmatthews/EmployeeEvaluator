@@ -103,6 +103,9 @@ Performance increases up the grid. Potential increases to the right. Outstanding
 
 ![Rolled-up talent 9-box for West](docs/images/talent-matrix.png)
 
+<img width="800" height="916" alt="image" src="https://github.com/user-attachments/assets/75228860-5847-4484-be29-966e22dddf4b" />
+
+
 ## People
 
 Search name, email, and employee number. Filter Role and Status from the column headers. Add a person here, then add them to a group on the Organization page so they appear on appraisals and talent reviews.
