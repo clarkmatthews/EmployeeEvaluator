@@ -30,6 +30,7 @@ export default async function DashboardPage({
         segmentType: true,
         groups: { select: { groupId: true, group: { select: { active: true } } } },
         evaluations: {
+          ...(scope ? { where: { groupId: { in: scope } } } : {}),
           select: {
             employeeId: true,
             employee: { select: { whoType: true } },

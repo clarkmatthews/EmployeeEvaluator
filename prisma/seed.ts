@@ -255,6 +255,10 @@ async function seedRoster(input: {
 }
 
 async function main() {
+  if (process.env.NODE_ENV === "production") {
+    console.error("Refusing to seed a production database.");
+    process.exit(1);
+  }
   await prisma.$executeRawUnsafe(`TRUNCATE TABLE "Company" CASCADE`);
   const passwordHash = await bcrypt.hash("empEval123!", 10);
   const company = await prisma.company.create({ data: { name: "Sample Company" } });

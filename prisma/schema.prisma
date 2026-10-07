@@ -46,8 +46,9 @@ model User {
   id                       String        @id @default(cuid())
   companyId                String
   company                  Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  email                    String
+  email                    String                @unique
   passwordHash             String
+  sessionVersion           Int                   @default(0)
   role                     UserRole
   status                   ActiveStatus  @default(ACTIVE)
   firstName                String
@@ -65,7 +66,6 @@ model User {
   talentRanks              TalentRank[]
   history                  CycleHistory[]
 
-  @@unique([companyId, email])
   @@index([companyId, employeeNumber])
 }
 

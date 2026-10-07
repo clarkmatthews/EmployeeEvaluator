@@ -8,20 +8,22 @@ const COOKIE = "ee_session";
 
 function secret() {
   const value = process.env.AUTH_SECRET;
-  if (!value) throw new Error("AUTH_SECRET is not set");
+  if (!value || value.length < 32 || value === "replace-with-a-long-random-string") {
+    throw new Error("AUTH_SECRET must be at least 32 characters and must not be the example placeholder");
+  }
   return new TextEncoder().encode(value);
 }
 
-export async function createSessionToken(userId: string) {
-  return new SignJWT({ userId })
+export async function createSessionToken(userId: string, sessionVersion: number) {
+  return new SignJWT({ userId, sessionVersion })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("12h")
     .sign(secret());
 }
 
-export async function setSessionCookie(userId: string) {
-  const token = await createSessionToken(userId);
+export async function setSessionCookie(userId: string, sessionVersion: number) {
+  const token = await createSessionToken(userId, sessionVersion);
   const jar = await cookies();
   jar.set(COOKIE, token, {
     httpOnly: true,
@@ -44,9 +46,10 @@ export async function getSession(): Promise<SessionUser | null> {
   try {
     const { payload } = await jwtVerify(token, secret());
     const userId = String(payload.userId ?? "");
-    if (!userId) return null;
+    const sessionVersion = payload.sessionVersion;
+    if (!userId || typeof sessionVersion !== "number" || !Number.isInteger(sessionVersion)) return null;
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user || user.status === "INACTIVE") return null;
+    if (!user || user.status === "INACTIVE" || user.sessionVersion !== sessionVersion) return null;
     return {
       userId: user.id,
       companyId: user.companyId,

@@ -5,8 +5,10 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import type { ActiveStatus, UserRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/session";
+import { requireAdmin, setSessionCookie } from "@/lib/session";
 import { text } from "@/lib/format";
+
+const MIN_PASSWORD = 12;
 
 function roleOf(value: string): UserRole {
   if (value === "ADMIN" || value === "MANAGER" || value === "EMPLOYEE") return value;
@@ -26,6 +28,9 @@ export async function createPerson(formData: FormData) {
   const lastName = text(formData, "lastName");
   if (!email || !password || !firstName || !lastName) {
     redirect("/people?error=" + encodeURIComponent("Name, email, and password are required."));
+  }
+  if (password.length < MIN_PASSWORD) {
+    redirect("/people?error=" + encodeURIComponent("Password must be at least 12 characters."));
   }
   const existing = await prisma.user.findFirst({ where: { companyId: session.companyId, email } });
   if (existing) redirect("/people?error=" + encodeURIComponent("That email is already in use."));
@@ -66,7 +71,10 @@ export async function updatePerson(formData: FormData) {
   });
   if (clash) redirect(`/people?user=${id}&error=` + encodeURIComponent("That email is already in use."));
   const password = String(formData.get("password") ?? "");
-  await prisma.user.update({
+  if (password && password.length < MIN_PASSWORD) {
+    redirect(`/people?user=${id}&error=` + encodeURIComponent("Password must be at least 12 characters."));
+  }
+  const updated = await prisma.user.update({
     where: { id },
     data: {
       email,
@@ -78,9 +86,12 @@ export async function updatePerson(formData: FormData) {
       whoType: text(formData, "whoType") || "Employee",
       jobTitle: text(formData, "jobTitle"),
       department: text(formData, "department"),
-      ...(password ? { passwordHash: await bcrypt.hash(password, 10) } : {}),
+      ...(password ? { passwordHash: await bcrypt.hash(password, 10), sessionVersion: { increment: 1 } } : {}),
     },
   });
+  if (password && id === session.userId) {
+    await setSessionCookie(updated.id, updated.sessionVersion);
+  }
   revalidatePath("/people");
   revalidatePath("/dashboard");
   redirect(`/people?user=${id}&message=` + encodeURIComponent("Person updated."));

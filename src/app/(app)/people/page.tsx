@@ -99,7 +99,7 @@ function PersonForm({
       <label className="block"><span className={labelClass}>First name</span><input className={inputClass} name="firstName" defaultValue={user?.firstName} required /></label>
       <label className="block"><span className={labelClass}>Last name</span><input className={inputClass} name="lastName" defaultValue={user?.lastName} required /></label>
       <label className="block"><span className={labelClass}>Email</span><input className={inputClass} name="email" type="email" defaultValue={user?.email} required /></label>
-      <label className="block"><span className={labelClass}>{user ? "New password" : "Password"}</span><input className={inputClass} name="password" type="password" required={!user} /></label>
+      <label className="block"><span className={labelClass}>{user ? "New password" : "Password"}</span><input className={inputClass} name="password" type="password" minLength={12} required={!user} /></label>
       <label className="block">
         <span className={labelClass}>Role</span>
         <select className={inputClass} name="role" defaultValue={user?.role ?? "EMPLOYEE"}>

@@ -1,8 +1,20 @@
 import { PrismaClient } from "@prisma/client";
 
-const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
+function createPrisma() {
+  return new PrismaClient({
+    omit: {
+      user: {
+        passwordHash: true,
+      },
+    },
+  });
+}
 
-export const prisma = globalForPrisma.prisma ?? new PrismaClient();
+type AppPrisma = ReturnType<typeof createPrisma>;
+
+const globalForPrisma = globalThis as unknown as { prisma?: AppPrisma };
+
+export const prisma: AppPrisma = globalForPrisma.prisma ?? createPrisma();
 
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;

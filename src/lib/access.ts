@@ -52,8 +52,10 @@ export function canEditEvaluation(input: {
   cycle: { locked: boolean; closeDate: Date | null };
   unlocked: boolean;
 }) {
-  const asEmployee = input.session.userId === input.employeeId && input.groupAllowsSelfEdit;
-  const asSupervisor = input.session.role === "ADMIN" || (input.session.role === "MANAGER" && input.hasGroupAccess);
+  const isSelf = input.session.userId === input.employeeId;
+  const asEmployee = isSelf && input.groupAllowsSelfEdit;
+  const asSupervisor =
+    !isSelf && (input.session.role === "ADMIN" || (input.session.role === "MANAGER" && input.hasGroupAccess));
   if (input.employeeStatus === "INACTIVE") {
     return { editable: false, reason: "Inactive employees cannot be edited.", asEmployee, asSupervisor };
   }

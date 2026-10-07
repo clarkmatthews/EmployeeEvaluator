@@ -44,7 +44,12 @@ export default async function AppraisalsPage({
       : [],
     cycleIds.length
       ? prisma.evaluation.findMany({
-          where: { cycleId: { in: cycleIds }, groupId: { in: groupIds }, appraisal: { isNot: null } },
+          where: {
+            cycleId: { in: cycleIds },
+            groupId: { in: groupIds },
+            appraisal: { isNot: null },
+            ...(session.role === "EMPLOYEE" ? { employeeId: session.userId } : {}),
+          },
           include: {
             appraisal: {
               include: { keyLines: true, scorecardLines: true, accountabilityLines: true, behaviorLines: true, goals: true },

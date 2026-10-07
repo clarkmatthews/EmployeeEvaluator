@@ -59,6 +59,24 @@ function editor(id: string, kind: "message" | "error", message: string): never {
   redirect(`/templates/${id}?${kind}=` + encodeURIComponent(message));
 }
 
+async function catalogIdsBelongToCompany(
+  companyId: string,
+  ids: { keyIds: string[]; scorecardIds: string[]; accountabilityIds: string[]; behaviorIds: string[] },
+) {
+  const groups = [
+    { itemIds: ids.keyIds, count: (unique: string[]) => prisma.keyItem.count({ where: { companyId, id: { in: unique } } }) },
+    { itemIds: ids.scorecardIds, count: (unique: string[]) => prisma.scorecardItem.count({ where: { companyId, id: { in: unique } } }) },
+    { itemIds: ids.accountabilityIds, count: (unique: string[]) => prisma.accountabilityItem.count({ where: { companyId, id: { in: unique } } }) },
+    { itemIds: ids.behaviorIds, count: (unique: string[]) => prisma.behaviorItem.count({ where: { companyId, id: { in: unique } } }) },
+  ];
+  for (const group of groups) {
+    const unique = [...new Set(group.itemIds.filter(Boolean))];
+    if (unique.length === 0) continue;
+    if ((await group.count(unique)) !== unique.length) return false;
+  }
+  return true;
+}
+
 export async function createTemplate(formData: FormData) {
   const session = await requireAdmin();
   const year = Number(text(formData, "year"));
@@ -86,6 +104,17 @@ export async function saveTemplate(formData: FormData) {
   const eeMin = intOrNull(formData, "eeMin") ?? 80;
   const meMin = intOrNull(formData, "meMin") ?? 51;
   if (meMin > eeMin) editor(id, "error", "The meets minimum must be less than or equal to the exceeds minimum.");
+  const keyIds = formData.getAll("keyItemId").map(String);
+  const scorecardIds = formData.getAll("scorecardItemId").map(String);
+  const accountabilityIds = formData.getAll("accountabilityItemId").map(String);
+  const behaviorIds = formData.getAll("behaviorItemId").map(String);
+  const owned = await catalogIdsBelongToCompany(session.companyId, {
+    keyIds,
+    scorecardIds,
+    accountabilityIds,
+    behaviorIds,
+  });
+  if (!owned) editor(id, "error", "A selected catalog item was not found.");
   const flags = Object.fromEntries(templateFields.map((field) => [field, checked(formData, field)]));
   const texts = Object.fromEntries(textFields.map((field) => [field, text(formData, field)]));
   try {
@@ -96,10 +125,6 @@ export async function saveTemplate(formData: FormData) {
   } catch {
     editor(id, "error", "Another template already uses that year and employee type.");
   }
-  const keyIds = formData.getAll("keyItemId").map(String);
-  const scorecardIds = formData.getAll("scorecardItemId").map(String);
-  const accountabilityIds = formData.getAll("accountabilityItemId").map(String);
-  const behaviorIds = formData.getAll("behaviorItemId").map(String);
   await prisma.$transaction([
     prisma.templateKeyItem.deleteMany({ where: { templateId: id } }),
     prisma.templateScorecardItem.deleteMany({ where: { templateId: id } }),

@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireRoles } from "@/lib/session";
 import { accessibleGroupIds, canEditEvaluation } from "@/lib/access";
-import { intOrNull, text } from "@/lib/format";
+import { cycleIsLocked, intOrNull, text } from "@/lib/format";
 
 export type ActionState = { error: string };
 
@@ -122,10 +122,14 @@ export async function saveRanks(formData: FormData) {
   const groupId = text(formData, "groupId");
   const cycle = await prisma.cycle.findFirst({
     where: { id: cycleId, companyId: session.companyId, formKind: { name: "TOPS" } },
+    include: { groups: { select: { groupId: true } } },
   });
   const access = await accessibleGroupIds(session);
-  if (!cycle || !access.has(groupId)) {
+  if (!cycle || !access.has(groupId) || !cycle.groups.some((row) => row.groupId === groupId)) {
     redirect("/talent?error=" + encodeURIComponent("You cannot rank that group."));
+  }
+  if (cycleIsLocked(cycle)) {
+    redirect(`/talent?cycleId=${cycleId}&groupId=${groupId}&error=` + encodeURIComponent("This cycle is locked."));
   }
   const members = await prisma.groupMember.findMany({ where: { groupId }, select: { userId: true } });
   const allowed = new Set(members.map((member) => member.userId));

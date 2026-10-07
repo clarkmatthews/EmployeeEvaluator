@@ -24,14 +24,22 @@ const reportInclude = {
   },
 } satisfies Prisma.EvaluationInclude;
 
-type ReportEvaluation = Prisma.EvaluationGetPayload<{ include: typeof reportInclude }>;
+function loadPrintEvaluation(where: Prisma.EvaluationWhereInput) {
+  return prisma.evaluation.findFirst({
+    where,
+    include: reportInclude,
+  });
+}
+
+type ReportEvaluation = NonNullable<Awaited<ReturnType<typeof loadPrintEvaluation>>>;
 
 export default async function PrintAppraisalPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await requireUser();
   const { id } = await params;
-  const evaluation = await prisma.evaluation.findFirst({
-    where: { id, ...(await visibleEvaluationsWhere(session)), appraisal: { isNot: null } },
-    include: reportInclude,
+  const evaluation = await loadPrintEvaluation({
+    id,
+    ...(await visibleEvaluationsWhere(session)),
+    appraisal: { isNot: null },
   });
   if (!evaluation?.appraisal) notFound();
   return <AppraisalReport report={toReport(evaluation)} />;
