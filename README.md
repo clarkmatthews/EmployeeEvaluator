@@ -137,8 +137,3 @@ Key results, scorecard items, accountabilities, and behaviors are the lines on a
 
 ![Item catalog with Sales vs target open](docs/images/catalog.png)
 
-## Key value import
-
-Paste tab-separated rows of employee number, key item name, order, and value. Order 1 is the target and order 2 is the achieved amount. Imported amounts fill an appraisal that does not already have those amounts.
-
-![Key value import](docs/images/import.png)
