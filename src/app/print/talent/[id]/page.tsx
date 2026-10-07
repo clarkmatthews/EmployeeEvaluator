@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { PrintButton } from "@/components/print-button";
+import { TalentReport, talentRatingText, type TalentReportModel } from "@/components/talent-report";
 import { accessibleGroupIds } from "@/lib/access";
+import { ggRatingTexts } from "@/lib/gg-ratings";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 
@@ -12,45 +12,134 @@ export default async function PrintTalentPage({ params }: { params: Promise<{ id
     where: { id, cycle: { companyId: session.companyId } },
     include: {
       employee: true,
+      reviewer: true,
       group: true,
-      cycle: true,
+      cycle: { include: { company: true } },
       talentReview: { include: { ggResponses: { include: { ggItem: true } } } },
     },
   });
   if (!evaluation?.talentReview) notFound();
   const access = await accessibleGroupIds(session);
   if (session.role !== "ADMIN" && !access.has(evaluation.groupId)) notFound();
-  const review = evaluation.talentReview;
-  const ranks = await prisma.talentRank.findMany({
-    where: { cycleId: evaluation.cycleId, groupId: evaluation.groupId },
-    include: { user: true },
-  });
-  return (
-    <article className="space-y-3 text-sm">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs uppercase text-slate-500">Talent review</p>
-          <h1 className="text-2xl font-semibold">{evaluation.employee.firstName} {evaluation.employee.lastName}</h1>
-          <p>{evaluation.cycle.year} · {evaluation.group.name}</p>
-        </div>
-        <PrintButton />
-      </div>
-      <p>Performance {review.performance} · Potential {review.potential} · Trend {review.perfTrend}</p>
-      <p>Short-term {review.stpAction} {review.stpWhen}. {review.stpExplanation}</p>
-      <p>Long-term {review.ltpAction} {review.ltpWhen}. {review.ltpExplanation}</p>
-      <p>Relocate: {review.willingRelocate}. Geography: {review.geoPref}</p>
-      <p>Strengths: {review.strength1}; {review.strength2}</p>
-      <p>Development: {review.weakness1}; {review.weakness2}</p>
-      <h2 className="font-semibold">Good to Great</h2>
-      <ul>{review.ggResponses.map((response) => <li key={response.id}>{response.ggItem.itemText}: {response.rating}</li>)}</ul>
-      <p>{review.comments}</p>
-      <h2 className="font-semibold">Group ranks</h2>
-      <ul>
-        {ranks.sort((a, b) => (a.perfRank ?? 99) - (b.perfRank ?? 99)).map((rank) => (
-          <li key={rank.id}>{rank.user.firstName} {rank.user.lastName}: performance {rank.perfRank ?? "—"}, potential {rank.potlRank ?? "—"}</li>
-        ))}
-      </ul>
-      <p className="print:hidden"><Link className="text-indigo-700" href="/talent">Back</Link></p>
-    </article>
-  );
+
+  const [company, items, ranks, members] = await Promise.all([
+    prisma.company.findUniqueOrThrow({ where: { id: session.companyId } }),
+    prisma.ggItem.findMany({ where: { companyId: session.companyId }, orderBy: { itemSeq: "asc" } }),
+    prisma.talentRank.findMany({
+      where: { cycleId: evaluation.cycleId, groupId: evaluation.groupId },
+      include: { user: true },
+    }),
+    prisma.groupMember.findMany({
+      where: { groupId: evaluation.groupId },
+      include: { user: true },
+    }),
+  ]);
+
+  return <TalentReport report={toReport(evaluation, ggRatingTexts(company), items, ranks, members)} />;
+}
+
+function toReport(
+  evaluation: {
+    employeeId: string;
+    employee: { firstName: string; lastName: string; employeeNumber: string | null; jobTitle: string; department: string; status: string };
+    reviewer: { firstName: string; lastName: string } | null;
+    group: { name: string };
+    cycle: { year: number; company: { name: string } };
+    talentReview: {
+      updatedAt: Date;
+      performance: string;
+      potential: string;
+      perfTrend: string;
+      stpAction: string;
+      stpWhen: string;
+      stpMove: string;
+      stpBestFit: string;
+      stpExplanation: string;
+      ltpAction: string;
+      ltpWhen: string;
+      ltpMove: string;
+      ltpBestFit: string;
+      ltpExplanation: string;
+      willingRelocate: string;
+      geoPref: string;
+      strength1: string;
+      strength2: string;
+      weakness1: string;
+      weakness2: string;
+      comments: string;
+      questions: string;
+      ggResponses: { ggItemId: string; rating: number; ggItem: { id: string; itemText: string; itemSeq: number } }[];
+    } | null;
+  },
+  ratingTexts: readonly string[],
+  items: { id: string; itemText: string; itemSeq: number }[],
+  ranks: { userId: string; perfRank: number | null; potlRank: number | null; user: { firstName: string; lastName: string; status: string } }[],
+  members: { userId: string; user: { firstName: string; lastName: string; status: string } }[],
+): TalentReportModel {
+  const review = evaluation.talentReview!;
+  const saved = new Map(review.ggResponses.map((response) => [response.ggItemId, response.rating]));
+  const listed = new Set(items.map((item) => item.id));
+  const extra = review.ggResponses
+    .filter((response) => !listed.has(response.ggItemId))
+    .map((response) => response.ggItem)
+    .sort((a, b) => a.itemSeq - b.itemSeq);
+  const rankByUser = new Map(ranks.map((rank) => [rank.userId, rank]));
+  const people = new Map(members.map((member) => [member.userId, member.user]));
+  for (const rank of ranks) people.set(rank.userId, rank.user);
+
+  return {
+    companyName: evaluation.cycle.company.name,
+    year: evaluation.cycle.year,
+    employeeId: evaluation.employeeId,
+    employeeName: personLabel(evaluation.employee),
+    employeeNumber: evaluation.employee.employeeNumber ?? "",
+    jobTitle: evaluation.employee.jobTitle,
+    department: evaluation.employee.department,
+    groupName: evaluation.group.name,
+    reviewerName: evaluation.reviewer ? `${evaluation.reviewer.firstName} ${evaluation.reviewer.lastName}` : "",
+    reportDate: review.updatedAt.toLocaleDateString("en-US"),
+    performance: review.performance,
+    potential: review.potential,
+    trend: review.perfTrend,
+    shortTerm: {
+      action: review.stpAction,
+      when: review.stpWhen,
+      move: review.stpMove,
+      bestFit: review.stpBestFit,
+      explanation: review.stpExplanation,
+    },
+    longTerm: {
+      action: review.ltpAction,
+      when: review.ltpWhen,
+      move: review.ltpMove,
+      bestFit: review.ltpBestFit,
+      explanation: review.ltpExplanation,
+    },
+    willingRelocate: review.willingRelocate,
+    geoPref: review.geoPref,
+    strength1: review.strength1,
+    strength2: review.strength2,
+    weakness1: review.weakness1,
+    weakness2: review.weakness2,
+    comments: review.comments,
+    questions: review.questions,
+    goodToGreat: [...items, ...extra].map((item) => ({
+      id: item.id,
+      item: item.itemText,
+      rating: talentRatingText(saved.get(item.id), ratingTexts),
+    })),
+    ranks: [...people.entries()]
+      .map(([userId, user]) => ({
+        userId,
+        name: personLabel(user),
+        performance: rankByUser.get(userId)?.perfRank ?? null,
+        potential: rankByUser.get(userId)?.potlRank ?? null,
+      }))
+      .sort((a, b) => (a.performance ?? 999) - (b.performance ?? 999) || a.name.localeCompare(b.name)),
+  };
+}
+
+function personLabel(person: { firstName: string; lastName: string; status: string }) {
+  const name = `${person.firstName} ${person.lastName}`;
+  return person.status === "INACTIVE" ? `${name} (inactive)` : name;
 }

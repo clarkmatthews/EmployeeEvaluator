@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { saveTalent, type ActionState } from "@/actions/talent";
 import { buttonClass, inputClass, labelClass } from "@/components/ui";
+import { ggOptionLabel } from "@/lib/gg-ratings";
 
 const performance = ["", "Outstanding", "Exceeds expectations", "Meets expectations", "Needs improvement", "Unsatisfactory"];
 const potential = ["", "High", "Medium", "Low"];
@@ -18,6 +19,7 @@ export function TalentForm(props: {
   reason: string;
   values: Record<string, string>;
   items: { id: string; itemText: string; helpText: string; rating: number | null }[];
+  ratingTexts: string[];
   printHref?: string;
 }) {
   const [state, actionState, pending] = useActionState(saveTalent, { error: "" } satisfies ActionState);
@@ -66,11 +68,9 @@ export function TalentForm(props: {
             {item.helpText ? <span className="mb-1 block text-xs text-slate-500">{item.helpText}</span> : null}
             <select className={inputClass} name={`gg-${item.id}`} defaultValue={item.rating ?? ""} disabled={disabled}>
               <option value="">Select</option>
-              <option value="1">1 Needs development</option>
-              <option value="2">2</option>
-              <option value="3">3 Meets</option>
-              <option value="4">4</option>
-              <option value="5">5 Role model</option>
+              {[1, 2, 3, 4, 5].map((level) => (
+                <option key={level} value={level}>{ggOptionLabel(level, props.ratingTexts)}</option>
+              ))}
             </select>
           </label>
         ))}

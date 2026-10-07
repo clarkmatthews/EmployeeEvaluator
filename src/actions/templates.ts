@@ -235,6 +235,27 @@ export async function updateBehaviorItem(formData: FormData) {
   redirect("/catalog?message=" + encodeURIComponent("Behavior updated."));
 }
 
+export async function updateGgRatings(formData: FormData) {
+  const session = await requireAdmin();
+  const labels = [1, 2, 3, 4, 5].map((level) => text(formData, `rating${level}`));
+  if (labels.some((label) => label.length > 80)) {
+    redirect("/catalog?error=" + encodeURIComponent("Each rating label must be 80 characters or fewer."));
+  }
+  await prisma.company.update({
+    where: { id: session.companyId },
+    data: {
+      ggRating1: labels[0],
+      ggRating2: labels[1],
+      ggRating3: labels[2],
+      ggRating4: labels[3],
+      ggRating5: labels[4],
+    },
+  });
+  revalidatePath("/catalog");
+  revalidatePath("/talent");
+  redirect("/catalog?message=" + encodeURIComponent("Good to Great ratings updated."));
+}
+
 export async function createGgItem(formData: FormData) {
   const session = await requireAdmin();
   const itemText = text(formData, "itemText");

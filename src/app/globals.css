@@ -54,6 +54,14 @@ body {
   text-align: center;
 }
 
+.pa-report tr.subject td {
+  font-weight: 700;
+}
+
+.pa-report tr.subject td:first-child {
+  box-shadow: inset 3px 0 0 #0f172a;
+}
+
 @media print {
   body {
     background: white;

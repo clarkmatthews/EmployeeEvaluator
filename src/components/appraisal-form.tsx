@@ -57,7 +57,6 @@ export function AppraisalForm(props: {
   template: {
     inclEmplInfo: boolean;
     inclOthrJobs: boolean;
-    inclRankDesc: boolean;
     inclInstruct: boolean;
     inclKeysSect: boolean;
     inclScorecardSect: boolean;
@@ -71,8 +70,6 @@ export function AppraisalForm(props: {
     inclRatingsSummSect: boolean;
     inclG2GGoalsSect: boolean;
     inclApprSigsSect: boolean;
-    formRatingsDescTitle: string;
-    formRatingsDesc: string;
     formInstructTitle: string;
     formInstruct: string;
     keysSectTitle: string;
@@ -144,7 +141,6 @@ export function AppraisalForm(props: {
           <label><span className={labelClass}>Other jobs this cycle</span><textarea className={inputClass} name="otherJobsNote" defaultValue={props.otherJobsNote} rows={3} disabled={disabled} /></label>
         </section>
       ) : <input type="hidden" name="otherJobsNote" value={props.otherJobsNote} />}
-      {props.template.inclRankDesc ? <Copy title={props.template.formRatingsDescTitle} body={props.template.formRatingsDesc} /> : null}
       {props.template.inclInstruct ? <Copy title={props.template.formInstructTitle} body={props.template.formInstruct} /> : null}
       {props.template.inclKeysSect ? (
         <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">

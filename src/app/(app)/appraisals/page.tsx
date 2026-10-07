@@ -203,7 +203,6 @@ async function AppraisalBody({
       template={{
         inclEmplInfo: template.inclEmplInfo,
         inclOthrJobs: template.inclOthrJobs,
-        inclRankDesc: template.inclRankDesc,
         inclInstruct: template.inclInstruct,
         inclKeysSect: template.inclKeysSect,
         inclScorecardSect: template.inclScorecardSect,
@@ -217,8 +216,6 @@ async function AppraisalBody({
         inclRatingsSummSect: template.inclRatingsSummSect,
         inclG2GGoalsSect: template.inclG2GGoalsSect,
         inclApprSigsSect: template.inclApprSigsSect,
-        formRatingsDescTitle: template.formRatingsDescTitle,
-        formRatingsDesc: template.formRatingsDesc,
         formInstructTitle: template.formInstructTitle,
         formInstruct: template.formInstruct,
         keysSectTitle: template.keysSectTitle,

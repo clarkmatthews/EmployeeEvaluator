@@ -99,7 +99,7 @@ export function EmployeePicker({
 
   return (
     <div style={{ position: "relative", zIndex: 20 }}>
-    <div className="grid gap-3 sm:grid-cols-4 sm:items-end">
+    <div className="grid gap-3 sm:grid-cols-4 sm:items-start">
       <label>
         <span className={labelClass}>Cycle</span>
         <select

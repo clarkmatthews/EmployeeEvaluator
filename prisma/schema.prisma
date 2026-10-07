@@ -40,6 +40,11 @@ model Company {
   behaviorItems       BehaviorItem[]
   templates           AppraisalTemplate[]
   ggItems             GgItem[]
+  ggRating1           String                @default("Needs development")
+  ggRating2           String                @default("")
+  ggRating3           String                @default("Meets")
+  ggRating4           String                @default("")
+  ggRating5           String                @default("Role model")
 }
 
 model User {
