@@ -90,7 +90,7 @@ export function TalentReport({ report }: { report: TalentReportModel }) {
         </dl>
       </Section>
 
-      <Section title="Good to Great">
+      <Section title="Growth and Development">
         <table>
           <thead>
             <tr>

@@ -447,7 +447,7 @@ async function main() {
   const gg = [
     ["Builds a strong team", "Look for how the person develops others."],
     ["Confronts brutal facts", "Look for honest assessment of results."],
-    ["Keeps the hedgehog concept", "Look for focus on what the team does best."],
+    ["Triple Alignment (passion + skill + value)", "Look for focus on what the team does best."],
     ["Uses a culture of discipline", "Look for consistent follow-through."],
   ];
   const ggItems = await Promise.all(

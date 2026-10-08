@@ -61,7 +61,7 @@ export function TalentForm(props: {
         <Field name="weakness2" label="Second development need" value={props.values.weakness2} disabled={disabled} />
       </section>
       <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
-        <h2 className="font-semibold">Good to Great</h2>
+        <h2 className="font-semibold">Growth and Development</h2>
         {props.items.map((item) => (
           <label key={item.id} className="block">
             <span className={labelClass}>{item.itemText}</span>

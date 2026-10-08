@@ -72,7 +72,7 @@ export default async function TalentPage({
       <PageHeader
         title="Talent reviews"
         detail="Choose a cycle and group. The employee list shows only people in that group. (C) is a complete review, (P) was saved with blank fields, and (I) has not been started."
-        help="The employee list follows the group you select. (C) means every field on the form is filled, (P) means the review was saved with blank fields, and (I) means it has not been started. Rank the group by performance and by potential, then complete the 9-box ratings, plans, relocation, strengths, and Good to Great items."
+        help="The employee list follows the group you select. (C) means every field on the form is filled, (P) means the review was saved with blank fields, and (I) means it has not been started. Rank the group by performance and by potential, then complete the 9-box ratings, plans, relocation, strengths, and Growth and Development items."
       />
       <Banner message={params.message} error={params.error} />
       {pickerCycles.length ? (
