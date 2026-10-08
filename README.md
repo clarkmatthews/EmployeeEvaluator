@@ -81,7 +81,7 @@ The print view is the appraisal report. Employee, supervisor, and approver signa
 
 ## Talent reviews
 
-Talent reviews use the same cycle, group, and employee picker, with the same **(C)**, **(P)**, and **(I)** marks. A talent review is complete when every field on the form is filled, including the Good to Great ratings.
+Talent reviews use the same cycle, group, and employee picker, with the same **(C)**, **(P)**, and **(I)** marks. A talent review is complete when every field on the form is filled.
 
 Rank the group by performance and by potential, then record performance, potential, trend, short- and long-term plans, relocation, strengths, and development needs.
 
@@ -103,8 +103,7 @@ Performance increases up the grid. Potential increases to the right. Outstanding
 
 ![Rolled-up talent 9-box for West](docs/images/talent-matrix.png)
 
-<img width="800" height="916" alt="image" src="https://github.com/user-attachments/assets/75228860-5847-4484-be29-966e22dddf4b" />
-
+<img width="791" height="910" alt="image" src="https://github.com/user-attachments/assets/176912ac-bc46-453f-a37f-1a76fb85c1bb" />
 
 ## People
 
@@ -134,7 +133,7 @@ A template is the appraisal form for one year and employee type. Open it to choo
 
 ## Item catalog
 
-Key results, scorecard items, accountabilities, and behaviors are the lines on an appraisal. Each item has five rating levels with points. Key and scorecard items also have a minimum that suggests the rating from the entered amounts. Good to Great items are the questions on a talent review.
+Key results, scorecard items, accountabilities, and behaviors are the lines on an appraisal. Each item has five rating levels with points. Key and scorecard items also have a minimum that suggests the rating from the entered amounts. 
 
 ![Item catalog with Sales vs target open](docs/images/catalog.png)
 
